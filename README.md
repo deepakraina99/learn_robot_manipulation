@@ -1,1 +1,1 @@
-This is Gym environment for learning force controlled trajectories
+This is Gym environment for learning robot manipulation tasks
