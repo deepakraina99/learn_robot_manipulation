@@ -14,18 +14,18 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import set_random_seed
 
 log_dir = os.path.join(os.path.dirname(__file__), 'logs')
-save_model_dir = os.path.dirname(__file__) + "trained_models/ppo/" + "TargetReaching-rew2maxdth1"
+save_model_dir = os.path.dirname(__file__) + "trained_models/ppo/" + "TargetReachingUR5"
 if not os.path.exists(save_model_dir):
     os.makedirs(save_model_dir)
 
 total_timesteps=int(1e6)
 tests = 10
 
-# train, test = 1, 0
-train, test = 0, 1
+train, test = 1, 0
+# train, test = 0, 1
 
 if train:
-  env = gym.make('TargetReaching-v0')
+  env = gym.make('TargetReachingUR5-v0')
   env = Monitor(env, log_dir)
 
   env = DummyVecEnv([lambda: env])
@@ -40,18 +40,18 @@ if train:
   #             policy_kwargs=dict(log_std_init=-2.7,ortho_init=False,activation_fn=nn.ReLU,net_arch=[dict(pi=[256, 256], vf=[256, 256])]), 
 #             verbose=1)
   model.learn(total_timesteps)
-  model.save(save_model_dir + "/TargetReaching-v0")
+  model.save(save_model_dir + "/TargetReachingUR5-v0")
   stats_path = save_model_dir + "/vec_normalize.pkl"
   env.save(stats_path)
 
-  plot_results([log_dir], total_timesteps, results_plotter.X_TIMESTEPS, "PPO TargetReaching RRBot")
+  plot_results([log_dir], total_timesteps, results_plotter.X_TIMESTEPS, "PPO TargetReaching UR5")
   plt.savefig(save_model_dir + '/Rewards.png')
   plt.show()
   
 if test:
-  model = PPO.load(save_model_dir + "/TargetReaching-v0")
+  model = PPO.load(save_model_dir + "/TargetReachingUR5-v0")
   # Load the saved statistics
-  env = gym.make('TargetReaching-v0')
+  env = gym.make('TargetReachingUR5-v0')
   env = DummyVecEnv([lambda: env])
   stats_path = save_model_dir + "/vec_normalize.pkl"
   env = VecNormalize.load(stats_path, env)

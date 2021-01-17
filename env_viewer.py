@@ -1,29 +1,31 @@
-import gym
+import gym, sys, argparse
 import numpy as np
 import learn_robot_manipulation
 
-env = gym.make('TargetReaching-v0')
+if sys.version_info < (3, 0):
+    print('Please use Python 3')
+    exit()
 
-# observation = env.reset()
-# print(observation)
-# # env.step(0)
-# while True:
-#     env.step(0)
+parser = argparse.ArgumentParser(description='Assistive Gym Environment Viewer')
+parser.add_argument('--env', default='TargetReaching-v0',
+                    help='Environment to test (default: ScratchItchJaco-v0)')
+args = parser.parse_args()
+
+env = gym.make(args.env)
 
 while True:
     done = False
-    # env.render()
+    env.render()
     observation = env.reset()
     action = env.action_space.sample()
-    print('Observation size:', np.shape(observation), 'Action size:', np.shape(action))
-    
+    # print('Observation size:', np.shape(observation), 'Action size:', np.shape(action))
+
     while not done:
         env.render()
         action = env.action_space.sample()
         # print('action:', action)
         # action=[0,0,0,0,0,0]
-        # observation, reward, done, info = env.step(env.action_space.sample())
         observation, reward, done, info = env.step(action)
-        # print('Observation:', observation)
-        print('Reward:', reward)
-        # print('info:', info)
+        # observation, reward, done, info = env.step(action)
+        # print('Reward:', reward)
+        print('info:', info)

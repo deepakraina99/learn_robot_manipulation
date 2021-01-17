@@ -11,6 +11,7 @@ import torch.optim as optim
 
 import matplotlib.pyplot as plt
 import csv
+import time
 
 #Agent Model
 BUFFER_SIZE  = int(1e6)
@@ -237,13 +238,17 @@ class Controller():
         NumSuccess = 0
         self.agents.load(filename='trained_models/ddpg/' + model_name)
         for i in range(num_test):
+            self.env.render()
             state = self.env.reset()
             self.agents.reset()   
             for t in range(max_timesteps+1):
                 action = self.agents.act(state, add_noise=False)
                 self.env.render()
-                next_state, reward, done, _ = self.env.step(action)
+                next_state, reward, done, info = self.env.step(action)
                 state = next_state
+                if info['task_success']:
+                    print('Reached Goal !!')
+                    done = True
                 if done:
                     break
             if t < max_timesteps:

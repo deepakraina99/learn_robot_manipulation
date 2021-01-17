@@ -1,1 +1,2 @@
 from learn_robot_manipulation.envs.target_reaching import TargetReachingEnv
+from learn_robot_manipulation.envs.target_reaching_robots import TargetReachingRRBotEnv, TargetReachingUR5Env

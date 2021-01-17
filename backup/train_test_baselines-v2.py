@@ -10,19 +10,16 @@ from stable_baselines3.common.vec_env import DummyVecEnv, VecNormalize
 from stable_baselines3.common.monitor import Monitor
 from stable_baselines3.common import results_plotter
 from stable_baselines3.common.results_plotter import load_results, ts2xy, plot_results
-from stable_baselines3.common.env_util import make_vec_env
-from stable_baselines3.common.utils import set_random_seed
 
 log_dir = os.path.join(os.path.dirname(__file__), 'logs')
-save_model_dir = os.path.dirname(__file__) + "trained_models/ppo/" + "TargetReaching-rew2maxdth1"
+save_model_dir = os.path.dirname(__file__) + "trained_models/ppo/" + "TargetReaching-monitor"
 if not os.path.exists(save_model_dir):
     os.makedirs(save_model_dir)
 
-total_timesteps=int(1e6)
-tests = 10
+total_timesteps=int(1e3)
 
-# train, test = 1, 0
-train, test = 0, 1
+train, test = 1, 0
+# train, test = 0, 1
 
 if train:
   env = gym.make('TargetReaching-v0')
@@ -59,10 +56,9 @@ if test:
   env.training = False
   # reward normalization is not needed at test time
   env.norm_reward = False
-  success = 0
+
   # obs = env.reset()
-  env.seed(10)
-  for _ in range(tests):
+  for _ in range(5):
     done = False
     env.render()
     obs = env.reset()
@@ -74,7 +70,5 @@ if test:
       if info[0]['task_success']:
         print('Reached Goal !!')
         done = True
-        success +=1
         obs = env.reset()
-  print('success: {}/{}'.format(success, tests))
     # env.close()
