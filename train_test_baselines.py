@@ -14,15 +14,15 @@ from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.utils import set_random_seed
 
 log_dir = os.path.join(os.path.dirname(__file__), 'logs')
-save_model_dir = os.path.dirname(__file__) + "trained_models/ppo/" + "TargetReaching-rew2maxdth1"
+save_model_dir = os.path.dirname(__file__) + "trained_models/ppo/" + "TargetReaching-5e6"
 if not os.path.exists(save_model_dir):
     os.makedirs(save_model_dir)
 
 total_timesteps=int(1e6)
 tests = 10
 
-# train, test = 1, 0
-train, test = 0, 1
+train, test = 1, 0
+# train, test = 0, 1
 
 if train:
   env = gym.make('TargetReaching-v0')
@@ -61,7 +61,7 @@ if test:
   env.norm_reward = False
   success = 0
   # obs = env.reset()
-  env.seed(10)
+  # env.seed(10)
   for _ in range(tests):
     done = False
     env.render()

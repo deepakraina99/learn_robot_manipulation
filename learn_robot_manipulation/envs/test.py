@@ -2,6 +2,7 @@ import numpy as np
 
 a = np.array([1,2,3])
 b = np.array([1,2,3])
+print(-a)
 print(np.concatenate((a, b)))
 
 def map_action_values(output_lower_limit, output_upper_limit, action_value):

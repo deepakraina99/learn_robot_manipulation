@@ -5,10 +5,11 @@ from .utils import Utils
 
 
 class WorldCreation:
-    def __init__(self, pid, robot_type='rrbot', time_step=0.02, np_random=None):
+    def __init__(self, pid, robot_type='rrbot', time_step=0.02, target_size=0.2, np_random=None):
         self.id = pid
         self.robot_type = robot_type
         self.time_step = time_step
+        self.target_size = target_size
         self.np_random = np_random
         self.directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'assets')
         self.utils = Utils(self.id, self.np_random)
@@ -36,10 +37,10 @@ class WorldCreation:
         if self.robot_type == 'ur5':
             self.load_box(position=[0,0,0.25], dimensions=(0.1,0.1,0.5), mass=0, color=(0.5,0.5,0.5,1))
 
-        robot, controllable_joints, tool_index, joint_lower_limits, joint_upper_limits  = self.load_robot()
+        robot, all_joints, controllable_joints, tool_index, joint_lower_limits, joint_upper_limits  = self.load_robot()
         target, target_pos, target_orient = self.load_target(robot, tool_index)
 
-        return robot, controllable_joints, tool_index, joint_lower_limits, joint_upper_limits, target, target_pos, target_orient
+        return robot, all_joints, controllable_joints, tool_index, joint_lower_limits, joint_upper_limits, target, target_pos, target_orient
 
     def load_box(self, position, orientation=(0, 0, 0, 1), mass=1., dimensions=(1., 1., 1.), color=None):
         """
@@ -68,27 +69,41 @@ class WorldCreation:
         if self.robot_type == 'ur5':
             # Load the UR5 robot
             robot = p.loadURDF(os.path.join(self.directory, 'ur', 'ur5-afc.urdf'), useFixedBase=True, basePosition=[0, 0, 0.5], flags=p.URDF_USE_SELF_COLLISION, physicsClientId=self.id)
-            control_joint_indices = [0, 1, 2, 3, 4, 5]
+            control_joint_indices = [0, 1, 2]
+            all_joint_indices = [0, 1, 2, 3, 4, 5]
             tool_index = 6
-            # Reset the joint states (change to random initial position)
+            joint_lower_limits, joint_upper_limits = self.get_joint_limits(robot, control_joint_indices)
+            # joint_lower_limits = np.deg2rad([-360, -160, -160, -90, -90, -90])
+            # joint_upper_limits = np.deg2rad([360, 20, 20, -90, -90, -90])            
+            joint_lower_limits = np.deg2rad([-360, -360, -360, -90, -90, -90])
+            joint_upper_limits = np.deg2rad([360, 360, 360, -90, -90, -90])  
             initial_joint_positions = [0.0, -1.57, 1.57, -1.57, -1.57, -1.57]
-        
+            # initial_joint_positions = np.random.uniform(low=joint_lower_limits, high=joint_upper_limits)
+
         if self.robot_type == 'rrbot':
             # Load the UR5 robot
             robot = p.loadURDF(os.path.join(self.directory, 'rrbot', 'rrbot.urdf'), useFixedBase=True, basePosition=[0, 0, 0], flags=p.URDF_USE_SELF_COLLISION, physicsClientId=self.id)
             control_joint_indices = [1, 2]
+            all_joint_indices = [1, 2]
             tool_index = 3
-            # Reset the joint states (change to random initial position)
-            initial_joint_positions = [0.0, 0.5]
+            # joint_lower_limits, joint_upper_limits = self.get_joint_limits(robot, control_joint_indices)
+            joint_lower_limits = np.deg2rad([-340, -340])
+            joint_upper_limits = np.deg2rad([340, 340])
+            # initial_joint_positions = [0.0, 0.0]
+            initial_joint_positions = np.random.uniform(low=joint_lower_limits, high=joint_upper_limits)
 
         # Let the environment settle
         for _ in range(100):
             p.stepSimulation(physicsClientId=self.id)
 
-        self.reset_joint_states(robot, joint_ids=control_joint_indices,  positions=initial_joint_positions)
-        joint_lower_limits, joint_upper_limits = self.get_joint_limits(robot, control_joint_indices)
+        # Enforce the joint limits
+        for  i, j_idx in enumerate(control_joint_indices):
+            p.changeDynamics(robot, linkIndex=j_idx, jointLowerLimit=joint_lower_limits[i], jointUpperLimit=joint_upper_limits[i], physicsClientId=self.id)
 
-        return robot, control_joint_indices, tool_index, joint_lower_limits, joint_upper_limits
+        # Reset the joint states (change to random initial position)
+        self.reset_joint_states(robot, joint_ids=all_joint_indices,  positions=initial_joint_positions)
+
+        return robot, all_joint_indices, control_joint_indices, tool_index, joint_lower_limits, joint_upper_limits
 
     def get_joint_limits(self, body_id, joint_ids):
         lower_limits = []
@@ -129,20 +144,29 @@ class WorldCreation:
     def load_target(self, robot_id, tool_id):
 
         if self.robot_type == 'ur5':
-            sphere_radius = 0.05
+            sphere_radius = self.target_size/2.0
             # self.target_position = np.array([0.5, 0.1, 0.75])
-            target_high, target_low = np.array([1.0, 1.0, 1.0]), np.array([-1.0, -1.0, 0.5]) 
+            # target_high, target_low = np.array([1.0, 1.0, 1.0]), np.array([-1.0, -1.0, 0.5]) # full
+            # target_high, target_low = np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.5]) # q1
+            target_high, target_low = np.array([0.5, 0.5, 0.5]), np.array([0.2, -0.5, 0.5]) # q1
             target_orientation = np.array([1, 0, 0, 0])
+            target_orientation = np.asarray(p.getEulerFromQuaternion(target_orientation))
+            # orient_low, orient_high = np.array([0., 0., 0.]), np.array([0., 0., 0.])
+            # target_orientation = np.asarray([0, 0, 1])
+            robot_reach = 0.75 # 0.875 (ideal reach)
         elif self.robot_type == 'rrbot':
-            sphere_radius = 0.1
+            sphere_radius = self.target_size/2.0
             target_high, target_low = np.array([2.0, 0.2, 4.0]), np.array([-2.0, 0.2, 0.0]) 
             target_orientation = np.array([1, 0, 0, 0])
+            robot_reach = 1.5 # 2.0 (ideal reach)
 
         while True:
             target_position = self.np_random.uniform(low=target_low, high=target_high)
-            if np.linalg.norm(target_position-self.robot_base_position()) < 1.0:
+            if np.linalg.norm(target_position-self.robot_base_position()) < robot_reach:
                 break
-        
+        # target_position = np.array([0.47717288, 0.1092235,  0.93179151])
+        # target_orientation = self.np_random.uniform(low=orient_low, high=orient_high)
+
         visual_shape = p.createVisualShape(p.GEOM_SPHERE, radius=sphere_radius, rgbaColor=(1, 0, 0, 0.5), physicsClientId=self.id)
         target = p.createMultiBody(baseVisualShapeIndex=visual_shape, baseMass=0., basePosition=list(target_position), physicsClientId=self.id)
         
@@ -150,7 +174,7 @@ class WorldCreation:
 
     def robot_base_position(self):
         if self.robot_type == 'rrbot':
-            return np.array([0, 0, 1])
+            return np.array([0, 0, 2])
         elif self.robot_type == 'ur5':
             return np.array([0, 0, 0.5])
         

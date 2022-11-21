@@ -56,6 +56,71 @@ class Utils:
                                                       objPositions=list(q), objVelocities=dq, objAccelerations=dq, physicsClientId=self.id)
         return np.vstack((lin_jac, ang_jac))
 
+    # def get_my_analytical_jacobian(self, robot_id, tool_id, q):
+        
+    #     if isinstance(q, np.ndarray):
+    #         q = q.ravel().tolist()
+
+    #     tool_orientation = np.asarray(p.getLinkState(robot_id, tool_id)[1])
+    #     o = np.asarray(p.getEulerFromQuaternion(tool_orientation))
+    #     (r,pi,y) = o
+    #     B = np.array([[1, 0, np.sin(pi)],
+    #                   [0, np.cos(r), -np.cos(pi)*np.sin(r)],
+    #                   [0, np.sin(r), np.cos(pi)*np.cos(r)]])
+    #     Bi = np.linalg.inv(B)
+    #     # analytical jacobian
+    #     temp = np.eye(6)
+    #     temp[3:6,3:6] = Bi
+    #     J = self.get_jacobian(robot_id, tool_id, q)
+    #     Ja = np.matmul(temp, J)
+    #     return Ja
+
+    def get_jacobian_derivative_rpy_to_angular_velocity(self, rpy_angle):
+        r"""
+        Return the Jacobian that maps RPY angle rates to angular velocities, i.e. :math:`\omega = T(\phi) \dot{\phi}`.
+        Warnings: :math:`T` is singular when the pitch angle :math:`\theta_p = \pm \frac{\pi}{2}`
+        Args:
+            rpy_angle (np.array[float[3]]): RPY Euler angles [rad]
+        Returns:
+            np.array[float[3,3]]: Jacobian matrix that maps RPY angle rates to angular velocities.
+        """
+        roll, pitch, yaw = rpy_angle
+        T = np.array([[1., 0., np.sin(pitch)],
+                      [0., np.cos(roll), -np.cos(pitch) * np.sin(roll)],
+                      [0., np.sin(roll), np.cos(pitch) * np.cos(roll)]])
+        return T
+
+    def get_analytical_jacobian(self, jacobian, rpy_angle):
+        r"""
+        Return the analytical Jacobian :math:`J_{a}(q) = [J_{lin}(q), J_{\phi}(q)]^T`, which respects:
+        .. math:: \dot{x} = [\dot{p}, \dot{\phi}]^T = J_{a}(q) \dot{q}
+        where :math:`\dot{p}` is the Cartesian linear velocity of the link, and :math:`\phi` are the Euler angles
+        representing the orientation of the link. In general, the derivative of the Euler angles is not equal to
+        the angular velocity, i.e. :math:`\dot{\phi} \neq \omega`.
+        The analytical and geometric Jacobian are related by the following expression:
+        .. math::
+            J_{a}(q) = \left[\begin{array}{cc}
+                I_{3 \times 3} & 0_{3 \times 3} \\
+                0_{3 \times 3} & T^{-1}(\phi)
+                \end{array} \right] J(q)
+        where :math:`T` is the matrix that respects: :math:`\omega = T(\phi) \dot{\phi}`.
+        Warnings:
+            - We assume that the Euler angles used are roll, pitch, yaw (RPY)
+            - We currently compute the analytical Jacobian from the geometric Jacobian. If we assume that we use RPY
+                Euler angles then T is singular when the pitch angle :math:`\theta_p = \pm \frac{\pi}{2}.
+        Args:
+            jacobian (np.array[float[6,N]], np.array[float[6,6+N]]): full geometric Jacobian.
+            rpy_angle (np.array[float[3]]): RPY Euler angles
+        Returns:
+            np.array[float[6,N]], np.array[float[6,6+N]]: the full analytical Jacobian. The number of columns
+                depends if the base is fixed or floating.
+        """
+        T = self.get_jacobian_derivative_rpy_to_angular_velocity(rpy_angle)
+        Tinv = np.linalg.inv(T)
+        Ja = np.vstack((np.hstack((np.identity(3), np.zeros((3, 3)))),
+                        np.hstack((np.zeros((3, 3)), Tinv)))).dot(jacobian)
+        return Ja
+
     def enable_force_torque_sensor(self, body_id, joint_ids):
         
         if isinstance(joint_ids, int):
@@ -160,3 +225,6 @@ class Utils:
 
     def tool_position(self, body_id, tool_id):
         return np.asarray(p.getLinkState(body_id, tool_id, physicsClientId=self.id)[0])        
+
+    def tool_orientation(self, body_id, tool_id):
+        return np.asarray(p.getLinkState(body_id, tool_id, physicsClientId=self.id)[1])      

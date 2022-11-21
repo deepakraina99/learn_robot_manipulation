@@ -15,5 +15,5 @@ register(
 register(
     id='TargetReachingUR5-v0',
     entry_point='learn_robot_manipulation.envs:TargetReachingUR5Env',
-    max_episode_steps=200
+    max_episode_steps=400
     )

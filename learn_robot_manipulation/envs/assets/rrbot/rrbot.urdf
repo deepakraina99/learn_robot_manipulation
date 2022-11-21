@@ -181,6 +181,7 @@
     <origin rpy="0 0 0" xyz="0 0.1 1.95"/>
     <axis xyz="0 1 0"/>
     <dynamics damping="0.7"/>
+    <!-- <limit lower="-3.141592653589793238" upper="3.141592653589793238" velocity="3.141592653589793238"/> -->
   </joint>
   <!-- Middle Link -->
   <link name="link2">
@@ -209,6 +210,7 @@
     <origin rpy="0 0 0" xyz="0 0.1 0.9"/>
     <axis xyz="0 1 0"/>
     <dynamics damping="0.7"/>
+    <!-- <limit lower="-3.141592653589793238" upper="3.141592653589793238" velocity="3.141592653589793238"/> -->
   </joint>
   <!-- Top Link -->
   <link name="link3">

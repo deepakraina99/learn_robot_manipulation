@@ -1,0 +1,7 @@
+README.md
+setup.py
+learn_robot_manipulation.egg-info/PKG-INFO
+learn_robot_manipulation.egg-info/SOURCES.txt
+learn_robot_manipulation.egg-info/dependency_links.txt
+learn_robot_manipulation.egg-info/requires.txt
+learn_robot_manipulation.egg-info/top_level.txt
